@@ -16,11 +16,16 @@
 # below are examples, after initialization, modify it to your own.
 ###########################################################################
 ###kmcmake_example
-kmcmake_cc_library(
+
+goose_cc_extension(
         NAMESPACE ${PROJECT_NAME}
-        NAME foo
+        NAME freedom
         SOURCES
-        foo.cc
+        freedom_extension.cc
+        DEPS
+        goose_platform
+        ABI_TYPE
+        "CPP"
         CXXOPTS
         ${KMCMAKE_CXX_OPTIONS}
         PLINKS
@@ -28,29 +33,36 @@ kmcmake_cc_library(
         PUBLIC
 )
 
-kmcmake_cc_interface(
+kmcmake_cc_binary(
         NAMESPACE ${PROJECT_NAME}
-        NAME api
-        HEADERS
-        api.h
+        NAME freedom
+        SOURCES
+        shell.cc
         CXXOPTS
         ${KMCMAKE_CXX_OPTIONS}
-        PUBLIC
+        LINKS
+        goose::goose_shell_static
+        goose::goose_static
+        freedom::goose_freedom
+        goose::autocomplete_static
+        ${KMCMAKE_DEPS_LINK}
+        LINKOPTS
+        ${KMCMAKE_STATIC_BIN_OPTION}
 )
 
 kmcmake_cc_binary(
         NAMESPACE ${PROJECT_NAME}
-        NAME shared_main
+        NAME fc
         SOURCES
-        main.cc
+        fc.cc
         CXXOPTS
         ${KMCMAKE_CXX_OPTIONS}
-        DEPS
-        ${PROJECT_NAME}::foo
         LINKS
+        goose::goose_static
+        freedom::goose_freedom
         ${KMCMAKE_DEPS_LINK}
-        ${PROJECT_NAME}::foo
-        PUBLIC
+        LINKOPTS
+        ${KMCMAKE_STATIC_BIN_OPTION}
 )
 
 
