@@ -13,9 +13,17 @@
 // limitations under the License.
 //
 
-#include <gtest/gtest.h>
-#include <freedom/foo.h>
+#pragma once
 
-TEST(tt, foo) {
-    EXPECT_EQ(2, foo(1));
-}
+#include <goose/goose.h>
+
+namespace goose {
+
+    class FreedomExtension : public Extension {
+    public:
+        void Load(ExtensionLoader &loader) override;
+        std::string Name() override;
+        std::string Version() const override;
+    };
+
+} // namespace goose

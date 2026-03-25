@@ -35,7 +35,7 @@ if (KMCMAKE_BUILD_BENCHMARK)
 endif ()
 
 find_package(Threads REQUIRED)
-
+find_package(goose REQUIRED)
 ############################################################
 #
 # add you libs to the KMCMAKE_DEPS_LINK variable eg as turbo

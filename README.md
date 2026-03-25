@@ -14,57 +14,200 @@ freedom
 [中文版](./README_CN.md)
 
 
-freedom Project Description
+`freedom` develop of a goose extension. 
+
+## steps
+
+### S-1 prepare develop env
+
+see the documents of [kumo pub](https://pub.kumose.cc).
+
+- install kmdo (OPTIONAL)
+- install kmpkg
+
+### S-2 install and init project
+
+**create dir**
+```shell
+mkdir freedom
+```
+
+**init project**
+
+**option 1** using `kmdo`
+```shell
+cd freedom
+kmdo kmpkg gencmake -o . -n freedom
+```
+**option 2** if you do not install kmdo, using kmcmake instead,by:
+```shell
+git clone htts://github.com/kumose/kmcmake.git
+cd kmcmake
+cmake -S . -B built -DCHANGEME=freedom
+cmake --build build
+cmake --install build --prefix ../freedom
+```
+
+### S-3 manager dependencies
+
+working directory `${PROJECT}`
+```shell
+kmpkg new --application
+kmpkg add port goose
+```
+
+**edit** [free_deps.cmake](cmake/freedom_deps.cmake)
+
+add line:
+```cmake
+find_package(goose REQUIRED)
+# other you deps
+```
+
+### S-4 edit you extension
+
+- [header](freedom/freedom_extension.h)
+- [implment](freedom/freedom_extension.cc)
+- [app config file](freedom/shell.cc)
+
+[**cpp demo**](freedom/fc.cc)
+
+```cpp
+int main(int argc, char **argv) {
+    std::string fstr = "Kumo";
+    if (argc > 1) {
+        fstr = argv[1];
+    }
+    auto rs = goose::enable_extension_autoload("freedom", [](goose::Goose &db) {
+        db.LoadStaticExtension<goose::FreedomExtension>();
+        return goose::ExtensionLoadResult::LOADED_EXTENSION;
+    });
+    if (!rs.ok()) {
+        std::cerr << rs.message() << std::endl;
+        return 1;
+    }
+
+    goose::Goose db(nullptr);
+
+    goose::Connection con(db);
+
+    std::string query = "select freedom('" + fstr + "')";
+    auto result = con.Query(query);
+    result->Print();
+    return 0;
+}
+
+```
+
+### S-5 manager build
+
+**edit** [build cmake](freedom/CMakeLists.txt)
+
+***build extension***
+
+```cmake
+goose_cc_extension(
+        NAMESPACE ${PROJECT_NAME}
+        NAME freedom
+        SOURCES
+        freedom_extension.cc
+        DEPS
+        goose_platform
+        ABI_TYPE
+        "CPP"
+        CXXOPTS
+        ${KMCMAKE_CXX_OPTIONS}
+        PLINKS
+        ${KMCMAKE_DEPS_LINK}
+        PUBLIC
+)
+```
+
+***build you app***
+
+```cmake
+kmcmake_cc_binary(
+        NAMESPACE ${PROJECT_NAME}
+        NAME freedom
+        SOURCES
+        shell.cc
+        CXXOPTS
+        ${KMCMAKE_CXX_OPTIONS}
+        LINKS
+        goose::goose_shell_static
+        goose::goose_static
+        freedom::goose_freedom
+        # autocomplete_static is optional
+        goose::autocomplete_static
+        ${KMCMAKE_DEPS_LINK}
+        LINKOPTS
+        ${KMCMAKE_STATIC_BIN_OPTION}
+)
+
+```
+
+**NOTE** when using in cpp, do not link ``goose::goose_shell_static`` and
+`` goose::autocomplete_static``, `` goose::autocomplete_static`` is effect this case.
+
+```cmake
+kmcmake_cc_binary(
+        NAMESPACE ${PROJECT_NAME}
+        NAME fc
+        SOURCES
+        fc.cc
+        CXXOPTS
+        ${KMCMAKE_CXX_OPTIONS}
+        LINKS
+        goose::goose_static
+        freedom::goose_freedom
+        ${KMCMAKE_DEPS_LINK}
+        LINKOPTS
+        ${KMCMAKE_STATIC_BIN_OPTION}
+)
+
+```
+***NOTE***
+
+```text
+    LINKOPTS
+    ${KMCMAKE_STATIC_BIN_OPTION}
+    this is optionally,
+    make it less dynamic linking, friendly for delivery on the some platform.
+```
+
+### S-6 build it and enjoy
+
+**building**
+```shell
+cmake --preset=default
+cmake --build build
+```
+
+***enjoy***
+```shell
+$./build/freedom/freedom
+Goose v0.6.10 (Galileo)
+Enter ".help" for usage hints.
+memory FD select freedom('kumo');
+┌─────────────────┐
+│ freedom('kumo') │                                                                                                                                                                                                                                                                                        
+│     varchar     │                                                                                                                                                                                                                                                                                        
+├─────────────────┤                                                                                                                                                                                                                                                                                        
+│ Freedom kumo 🐥 │                                                                                                                                                                                                                                                                                        
+└─────────────────┘                                         
+```
+
+```shell
+./build/freedom/fc
+freedom('Kumo') 
+VARCHAR 
+[ Rows: 1]
+Freedom Kumo 🐥
+
+```
 
 ## 🛠️ Build
 
-This project uses [kmpkg](https://github.com/kumose/kmcmake) for dependency management and build integration.
-`kmpkg` automatically handles third-party library downloads, dependency resolution, and compiler flag configuration, avoiding the need to manually maintain complex CMake settings.
+run this demo you need do only S-1 and S-6, skip the middle steps.
 
 
-### 0. Prepare the environment
-
-- Linux (Ubuntu 20.04+ / CentOS 7+ Recommended)
-- CMake >= 3.20
-- GCC >= 9.4 / Clang >= 12
-- Make sure `kmpkg` is installed correctly, documents see [installation guide](https://kumo-pub.github.io/docs/category/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90----kmpkg)
-
-### 1.Configure the project (optional)
-
-* For the complete dependencies, refer to [`kmpkg.json`](kmpkg.json)
-* To update the dependency baseline, modify the `baseline` in `default-registry` of [`kmpkg-configuration.json`](kmpkg-configuration.json)
-* the `baseline` can be obtained via `git log`.
-
-
-### 2. Build the project
-
-Run in the project root directory:
-
-```bash
-cmake --preset=defualt
-cmake --build build -j$(nproc)
-```
-#### Using Manual Dependency Management
-
-If you manage dependencies yourself, you can build the project
-with standard CMake commands:
-
-```shell
-mkdir build
-cd build
-cmake ..
-make -j$(nproc)
-```
-
-**Note**
-
-- `--preset=default` requires that the corresponding CMake preset is defined in the project root directory.
-- When managing dependencies manually, make sure CMake’s find_package can locate all required libraries.
-
-### 3. Run Tests (Optional)
-
-Run in the project root directory:
-
-```shell
-ctest --test-dir build
-```
